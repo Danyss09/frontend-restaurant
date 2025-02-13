@@ -1,8 +1,9 @@
-"use client"; // Necesario para manejar eventos en el frontend
+"use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { FaPlus, FaEdit, FaTrash } from "react-icons/fa"; // Iconos para mejor UX
 
-// Definir la interfaz para los datos de un restaurante
 interface Restaurant {
   _id: string;
   name: string;
@@ -10,29 +11,21 @@ interface Restaurant {
   phone: string;
 }
 
-export default function ReadRestaurants() {
+export default function ReadRestaurant() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
-  // Fetch de restaurantes al cargar el componente
   useEffect(() => {
     const fetchRestaurants = async () => {
       try {
-        const response = await fetch("http://98.85.28.84:3000/restaurants/");
-        
-        // Verificar el estado de la respuesta
+        const response = await fetch("http://98.85.28.84:3000/restaurants");
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
-        const data: Restaurant[] = await response.json();  // Especificar el tipo de datos esperado
-        
-        if (Array.isArray(data)) {
-          setRestaurants(data);
-        } else {
-          setError("Unexpected data format");
-        }
+        const data: Restaurant[] = await response.json();
+        setRestaurants(data);
       } catch (error) {
         setError(error instanceof Error ? error.message : "Unknown error");
       } finally {
@@ -43,17 +36,8 @@ export default function ReadRestaurants() {
     fetchRestaurants();
   }, []);
 
-  if (loading) {
-    return <div className="text-center p-6">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="text-center p-6 text-red-500">{error}</div>;
-  }
-
   const handleEdit = (id: string) => {
-    // Lógica para editar restaurante (puedes agregar el formulario o navegar a una página de edición)
-    alert(`Editing restaurant with ID: ${id}`);
+    router.push(`/update-restaurant/${id}`);
   };
 
   const handleDelete = async (id: string) => {
@@ -63,55 +47,65 @@ export default function ReadRestaurants() {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to delete restaurant with ID: ${id}`);
+        throw new Error(`Failed to delete restaurant`);
       }
 
-      // Eliminar el restaurante de la lista local después de la eliminación exitosa
-      setRestaurants((prevRestaurants) => prevRestaurants.filter((restaurant) => restaurant._id !== id));
-
+      setRestaurants((prevRestaurants) =>
+        prevRestaurants.filter((restaurant) => restaurant._id !== id)
+      );
       alert("Restaurant deleted successfully!");
     } catch (error) {
-      alert(`Error deleting restaurant: ${error instanceof Error ? error.message : "Unknown error"}`);
+      alert(error instanceof Error ? error.message : "Unknown error");
     }
   };
 
+  const handleCreate = () => {
+    router.push("/create-restaurant");
+  };
+
+  if (loading) {
+    return <div className="text-center p-6 text-gray-700">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center p-6 text-red-500">{error}</div>;
+  }
+
   return (
-    <div className="max-w-7xl mx-auto mt-10">
-      <h1 className="text-2xl font-bold mb-6">Restaurants</h1>
-      
-      <table className="min-w-full bg-white border border-gray-300 rounded-lg shadow-md">
-        <thead>
-          <tr className="bg-gray-100">
-            <th className="p-4 text-left">Name</th>
-            <th className="p-4 text-left">Address</th>
-            <th className="p-4 text-left">Phone</th>
-            <th className="p-4 text-left">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {restaurants.map((restaurant) => (
-            <tr key={restaurant._id} className="border-b">
-              <td className="p-4">{restaurant.name}</td>
-              <td className="p-4">{restaurant.address}</td>
-              <td className="p-4">{restaurant.phone}</td>
-              <td className="p-4 space-x-2">
-                <button
-                  onClick={() => handleEdit(restaurant._id)}
-                  className="bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(restaurant._id)}
-                  className="bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="max-w-7xl mx-auto mt-10 p-6 bg-gray-100 min-h-screen">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">Restaurant Manager</h1>
+        <button
+          onClick={handleCreate}
+          className="flex items-center bg-green-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-green-600 transition"
+        >
+          <FaPlus className="mr-2" /> Add Restaurant
+        </button>
+      </div>
+
+      <div className="grid md:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-6">
+        {restaurants.map((restaurant) => (
+          <div key={restaurant._id} className="bg-white p-4 rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold text-gray-800">{restaurant.name}</h2>
+            <p className="text-gray-600">{restaurant.address}</p>
+            <p className="text-gray-600">{restaurant.phone}</p>
+            <div className="flex justify-between mt-4">
+              <button
+                onClick={() => handleEdit(restaurant._id)}
+                className="flex items-center bg-blue-500 text-white py-1 px-3 rounded hover:bg-blue-600 transition"
+              >
+                <FaEdit className="mr-1" /> Edit
+              </button>
+              <button
+                onClick={() => handleDelete(restaurant._id)}
+                className="flex items-center bg-red-500 text-white py-1 px-3 rounded hover:bg-red-600 transition"
+              >
+                <FaTrash className="mr-1" /> Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
